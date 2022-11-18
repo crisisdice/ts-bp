@@ -1,0 +1,333 @@
+{
+  "AnalyticsExportType": [
+    "typeId: ForeignKey<number> | null",
+    "name: string"
+  ],
+  "AnalyticsExport": [
+    "appId: ForeignKey<number>",
+    "typeId: ForeignKey<number>",
+    "year: number",
+    "month: number",
+    "filename: string",
+    "ext: string",
+    "meta: JsonValue | null",
+    "deletedAt: Date | null"
+  ],
+  "AnalyticsMausValues": [
+    "appId: ForeignKey<number>",
+    "regionId: ForeignKey<number>",
+    "year: number",
+    "counterName: string",
+    "indexInYear: number",
+    "countryId: ForeignKey<number>",
+    "localeId: ForeignKey<number>",
+    "platformId: ForeignKey<number>",
+    "counts: number"
+  ],
+  "AppAuthService": [
+    "appId: ForeignKey<number>",
+    "authServiceId: ForeignKey<number>",
+    "ordinal: number",
+    "createdBy: ForeignKey<number> | null"
+  ],
+  "AppPlatform": [
+    "appId: ForeignKey<number>",
+    "platformId: ForeignKey<number>",
+    "createdBy: ForeignKey<number>"
+  ],
+  "AppReceiptValidator": [
+    "receiptTypeId: ForeignKey<number>",
+    "appId: ForeignKey<number>",
+    "meta: JsonValue"
+  ],
+  "AppUser": [
+    "userId: ForeignKey<number>",
+    "appId: ForeignKey<number>"
+  ],
+  "AppVersion": [
+    "appPlatformId: ForeignKey<number>",
+    "name: string",
+    "description: string | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "App": [
+    "name: string",
+    "hash: string",
+    "contentBucket: string",
+    "archiveBucket: string",
+    "roleArn: string",
+    "cfIdPub: string",
+    "cfIdSec: string | null",
+    "configuration: JsonValue | null",
+    "setupVersion: string",
+    "createdBy: ForeignKey<number>"
+  ],
+  "AssetResourceVersionRequirement": [
+    "assetResourceId: ForeignKey<number>",
+    "appPlatformId: ForeignKey<number>",
+    "exclude: boolean",
+    "minVersionId: ForeignKey<number> | null",
+    "maxVersionId: ForeignKey<number> | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "AssetResource": [
+    "assetId: ForeignKey<number>",
+    "resourceId: ForeignKey<number> | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "Asset": [
+    "appId: ForeignKey<number>",
+    "name: string",
+    "ordinal: number",
+    "isActive: boolean",
+    "createdBy: ForeignKey<number>"
+  ],
+  "AuthServiceType": [
+    "typeId: ForeignKey<number>",
+    "name: string",
+    "settingsStructure: JsonValue | null"
+  ],
+  "AuthService": [
+    "name: string",
+    "typeId: ForeignKey<number>",
+    "settings: JsonValue | null"
+  ],
+  "CalendarFeedData": [
+    "dataHash: string | null",
+    "userId: ForeignKey<number>",
+    "appId: ForeignKey<number>",
+    "typeId: ForeignKey<number>",
+    "deletedAt: Date | null"
+  ],
+  "CalendarFeedDataType": [
+    "typeId: ForeignKey<number> | null",
+    "name: string"
+  ],
+  "Category": [
+    "appId: ForeignKey<number>",
+    "name: string",
+    "isDraft: boolean",
+    "isLocked: boolean",
+    "createdBy: ForeignKey<number>"
+  ],
+  "ContentType": [
+    "typeId: ForeignKey<number>",
+    "name: string"
+  ],
+  "Country": [
+    "name: string",
+    "shortcode: string"
+  ],
+  "Deployment": [
+    "appId: ForeignKey<number>",
+    "content: JsonValue | null",
+    "meta: JsonValue | null",
+    "createdBy: ForeignKey<number>",
+    "deletedAt: Date | null"
+  ],
+  "EpisodeContent": [
+    "episodeLocalizedId: ForeignKey<number>",
+    "resourceId: ForeignKey<number>",
+    "contentTypeId: ForeignKey<number>",
+    "appPlatformId: ForeignKey<number> | null"
+  ],
+  "EpisodeLocalized": [
+    "episodeId: ForeignKey<number>",
+    "localeId: ForeignKey<number>",
+    "name: string | null",
+    "data1: string | null",
+    "data2: string | null",
+    "data3: string | null",
+    "data4: string | null",
+    "data5: string | null",
+    "views: number",
+    "createdBy: ForeignKey<number>",
+    "updatedBy: ForeignKey<number> | null"
+  ],
+  "EpisodeLocalizedView": [
+    "regionId: ForeignKey<number>",
+    "episodeLocalizedId: ForeignKey<number>",
+    "episodeId: ForeignKey<number>",
+    "weekStart: Date",
+    "day: Date",
+    "views: number"
+  ],
+  "EpisodeTag": [
+    "tagId: ForeignKey<number>",
+    "episodeId: ForeignKey<number>",
+    "createdBy: ForeignKey<number>"
+  ],
+  "EpisodeVersionRequirement": [
+    "episodeId: ForeignKey<number>",
+    "appPlatformId: ForeignKey<number>",
+    "exclude: boolean",
+    "minVersionId: ForeignKey<number> | null",
+    "maxVersionId: ForeignKey<number> | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "Episode": [
+    "appId: ForeignKey<number>",
+    "name: string",
+    "resourceTypeId: ForeignKey<number>",
+    "views: number",
+    "playerTypeId: ForeignKey<number>",
+    "defaultThumbnailId: ForeignKey<number> | null",
+    "createdBy: ForeignKey<number>",
+    "updatedBy: ForeignKey<number> | null"
+  ],
+  "FileLog": [
+    "fileId: ForeignKey<number>",
+    "statusId: ForeignKey<number>",
+    "meta: JsonValue | null"
+  ],
+  "FileStatus": [
+    "statusId: ForeignKey<number> | null",
+    "name: string | null"
+  ],
+  "File": [
+    "parentId: ForeignKey<number> | null",
+    "resourceId: ForeignKey<number>",
+    "name: string | null",
+    "meta: JsonValue | null",
+    "type: string | null",
+    "ext: string | null",
+    "originalName: string | null"
+  ],
+  "JobLog": [
+    "jobId: ForeignKey<number>",
+    "statusId: ForeignKey<number>",
+    "meta: JsonValue | null"
+  ],
+  "JobService": [
+    "serviceId: ForeignKey<number> | null",
+    "name: string"
+  ],
+  "JobStatus": [
+    "statusId: ForeignKey<number> | null",
+    "name: string"
+  ],
+  "Job": [
+    "serviceId: ForeignKey<number>",
+    "externalId: string | null",
+    "inputId: ForeignKey<number>"
+  ],
+  "Locale": [
+    "name: string",
+    "shortcode: string"
+  ],
+  "Platform": [
+    "name: string",
+    "createdBy: ForeignKey<number>"
+  ],
+  "PlayerType": [
+    "typeId: ForeignKey<number>",
+    "name: string"
+  ],
+  "ReceiptType": [
+    "typeId: ForeignKey<number>",
+    "name: string",
+    "metaTemplate: JsonValue"
+  ],
+  "RegionCountry": [
+    "regionId: ForeignKey<number>",
+    "countryId: ForeignKey<number>",
+    "isDraft: boolean",
+    "createdBy: ForeignKey<number>"
+  ],
+  "RegionLocale": [
+    "regionId: ForeignKey<number>",
+    "localeId: ForeignKey<number>",
+    "isDraft: boolean",
+    "createdBy: ForeignKey<number>"
+  ],
+  "Region": [
+    "appId: ForeignKey<number>",
+    "name: string",
+    "isDraft: boolean",
+    "releaseTimezoneId: ForeignKey<number>",
+    "defaultLocaleId: ForeignKey<number> | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "ReleaseCategory": [
+    "categoryId: ForeignKey<number>",
+    "releaseId: ForeignKey<number>",
+    "ordinal: number | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "Release": [
+    "regionId: ForeignKey<number>",
+    "episodeId: ForeignKey<number>",
+    "sortIndex: number",
+    "isDraft: boolean",
+    "isDemoContent: boolean",
+    "publishDate: Date | null",
+    "unpublishDate: Date | null",
+    "createdBy: ForeignKey<number>",
+    "updatedBy: ForeignKey<number> | null",
+    "deletedAt: Date | null"
+  ],
+  "ResourceType": [
+    "typeId: ForeignKey<number>",
+    "name: string"
+  ],
+  "Resource": [
+    "appId: ForeignKey<number>",
+    "typeId: ForeignKey<number>",
+    "isPrivate: boolean",
+    "meta: JsonValue | null",
+    "createdBy: ForeignKey<number>"
+  ],
+  "Right": [
+    "rightId: ForeignKey<number>",
+    "name: string"
+  ],
+  "RoleRight": [
+    "roleId: ForeignKey<number>",
+    "rightId: ForeignKey<number>"
+  ],
+  "RoleType": [
+    "typeId: ForeignKey<number> | null",
+    "name: string | null"
+  ],
+  "Role": [
+    "name: string",
+    "roleTypeId: ForeignKey<number>",
+    "appId: ForeignKey<number> | null"
+  ],
+  "SequelizeMeta": [
+    "name: string"
+  ],
+  "Tag": [
+    "appId: ForeignKey<number>",
+    "name: string | null"
+  ],
+  "Timezone": [
+    "name: string"
+  ],
+  "TokenType": [
+    "typeId: ForeignKey<number> | null",
+    "name: string | null"
+  ],
+  "Token": [
+    "userId: ForeignKey<number>",
+    "typeId: ForeignKey<number>",
+    "hash: string | null",
+    "origin: string | null",
+    "meta: JsonValue | null",
+    "expiresAt: Date"
+  ],
+  "UserRole": [
+    "userId: ForeignKey<number>",
+    "roleId: ForeignKey<number>"
+  ],
+  "User": [
+    "email: string | null",
+    "password: string",
+    "firstname: string | null",
+    "lastname: string | null",
+    "localeId: ForeignKey<number>",
+    "twofaSecret: string | null",
+    "deletedAt: Date | null",
+    "confirmedAt: Date | null"
+  ]
+}

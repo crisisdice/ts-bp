@@ -1,29 +1,36 @@
 import { readdirSync, unlinkSync, readFileSync, writeFileSync } from 'fs'
+import MODELS from './index.json'
 
-function applyToFiles(paths: string[], callbacks: ((file: string, path?: string) => string)[]) {
-  for (const path of paths) {
+const getFirstMatch = (line: string, regex: RegExp) => Array.from(line.match(regex))[1]
+
+function applyToFiles(
+  root: string,
+  files: string[],
+  callbacks: ((file: string, root?: string, path?: string) => string)[],
+) {
+  for (const file of files) {
     try {
-      let file = readFileSync(path, 'utf8')
+      const path = `${root}/${file}`
+      let contents = readFileSync(path, 'utf8')
       for (const callback of callbacks) {
-        file = callback(file, path)
+        contents = callback(contents, root, file)
       }
       unlinkSync(path)
-      writeFileSync(path.replace('.js', '.ts'), file)
+      writeFileSync(path.replace('.js', '.ts'), contents)
     } catch (e) {
-      console.log(`Error with ${path}`)
+      console.log(`Error with ${file}`)
       console.log(e)
     }
   }
 }
 
 export function main() {
-  const path = process.argv[2]
+  const root = process.argv[2]
   const pathRegex = process.argv[3]
-  const files = readdirSync(path)
-    .filter((fl) => RegExp(pathRegex).test(fl))
-    .map((fl) => `${path}/${fl}`)
+  const files = readdirSync(root).filter((fl) => RegExp(pathRegex).test(fl))
 
-  applyToFiles(files, [toImport, replacements])
+  //applyToFiles(root, files, [createModel])
+  applyToFiles(root, files, [toImport, replacements])
 }
 
 function toImport(contents: string) {
@@ -49,27 +56,58 @@ function toImport(contents: string) {
     .join('\n')
 }
 
-function createModel(contents: string, path: string) {
-  const model = ''
+function createModel(contents: string, root: string, path: string) {
+  const EXPORTS = /module.exports = function define(.*)\(sequelize, DataTypes\) {/
 
-  const matchRelations = () => [{ name: '', type: '' }]
-  const relations = matchRelations().map(({ name, type }) => `declare ${name}: ${type};`)
+  const lines = contents.split('\n')
 
-  const matchKeys = () => ['']
-  const keys = matchKeys().map((name) => `declare ${name}: ForeignKey<number>;`)
+  const model = getFirstMatch(
+    lines.find((l) => EXPORTS.test(l)),
+    EXPORTS,
+  ) as keyof typeof MODELS
 
-  const matchHasManys = () => ['']
-  const hasManys = matchHasManys().map((name) => `declare ${name}: HasMany<${model}>;`)
+  const HAS_MANY = new RegExp(`${model}\.([A-Z]*) = ${model}\.hasMany`)
+  const BELONGS_TO = new RegExp(`${model}\.([A-Z]*) = ${model}\.belongsTo`)
 
-  const matchBelongsTos = () => ['']
-  const belongsTos = matchBelongsTos().map((name) => `declare ${name}: BelongsTo<${model}>;`)
+  const attrb = MODELS[model]
+    .filter((a) => !a.includes('ForeignKey'))
+    .map((name) => `declare ${name};`)
+  const keys = MODELS[model]
+    .filter((a) => a.includes('ForeignKey'))
+    .map((name) => `declare ${name}`)
 
-  const imps: string[] = []
+  const matchHasManys = () =>
+    lines.filter((l) => HAS_MANY.test(l)).map((l) => getFirstMatch(l, HAS_MANY))
+  const hasManys = matchHasManys().map((name) => `declare static ${name}: HasMany<${model}>;`)
 
-  const md = `import { ${imps.join(', ')} } from '../utils';
+  const matchBelongsTos = () =>
+    lines.filter((l) => BELONGS_TO.test(l)).map((l) => getFirstMatch(l, BELONGS_TO))
+  const belongsTos = matchBelongsTos().map((name) => `declare static ${name}: BelongsTo<${model}>;`)
+
+  const MODEL = /models\./
+  const MATCH = /models\.(\w+)/
+
+  const imps = lines
+    .filter((l) => MODEL.test(l))
+    .map((l) => getFirstMatch(l, MATCH))
+    .filter((ip, i, s) => s.indexOf(ip) === i)
+  const seqImps = []
+
+  if (hasManys.length) seqImps.push('HasMany')
+  if (belongsTos.length) seqImps.push('BelongsTo')
+  if (keys.length) seqImps.push('ForeignKey')
+
+  const utilImps = [ 'ModelBase' ]
+
+  if(attrb.join('').includes('JsonValue')) utilImps.push('JsonValue')
+    
+  //${ imps.length ? `import { ${imps.join(', ')} } from '.';` : ''}
+  const md = `
+      ${ seqImps.length ? `import { ${seqImps.join(', ')} } from 'sequelize';` : ''}
+      ${ utilImps.length ? `import { ${utilImps.join(', ')} } from '../utils';` : ''}
 
      export class ${model} extends ModelBase<${model}> {
-       ${relations.join('\n')}
+       ${attrb.join('\n')}
 
        ${keys.join('\n')}
 
@@ -79,16 +117,13 @@ function createModel(contents: string, path: string) {
      }
     `
 
-  // TODO
-  writeFileSync(md, path)
+  writeFileSync(`${root}/classes/${path.replace('.js', '.ts')}`, md)
 
   return contents
 }
 
 function replacements(contents: string) {
   const lines = contents.split('\n')
-
-  const getFirstMatch = (line: string, regex: RegExp) => Array.from(line.match(regex))[1]
 
   const modelsToImport: string[] = []
 
@@ -137,8 +172,12 @@ function replacements(contents: string) {
       if (!MODEL_REGEX.test(line)) return line
       return hasAssociate ? 'return { model, associate }' : 'return { model }'
     })
+    .map((line) => {
+      return line.includes('use strict') ? '' : line
+    })
 
-  const imp = `import { ${[model, ...modelsToImport].join(', ')} } from './classes'`
+  const imps = [model, ...modelsToImport].filter((ip, i, s) => s.indexOf(ip) === i)
+  const imp = `import { ${imps.join(', ')} } from './classes'`
   return ["import { DefinitionArgs, common } from './utils'", imp, ...rp].join('\n')
 }
 
