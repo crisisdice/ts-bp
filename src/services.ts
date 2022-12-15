@@ -94,7 +94,7 @@ function replacements(contents: string) {
 
   let hasTransaction = false
 
-  const types = (str: string) => { 
+  const types = (str: string) => {
     str = str
       .replaceAll('Id,', 'Id: number,')
       .replaceAll('Id ', 'Id: number ')
@@ -106,12 +106,17 @@ function replacements(contents: string) {
       .replaceAll('isActive', 'isActive: boolean')
       .replaceAll('ordinal', 'ordinal: number')
       .replaceAll('omittedAttributes', 'omittedAttributes: string[]')
-      .replaceAll('configuration', 'configuration: JsonValue') 
-      .replaceAll('uid', 'uid: string') 
-      .replaceAll('hash', 'hash: string') 
-      .replaceAll('ids', 'ids: number[]') 
-      .replaceAll('now', 'Date') 
-    return str.includes('Valid') || str.includes('ids') || str.includes('uid') || str.includes('idOrIds') ? str : str.replace('id', 'id: number')
+      .replaceAll('configuration', 'configuration: JsonValue')
+      .replaceAll('uid', 'uid: string')
+      .replaceAll('hash', 'hash: string')
+      .replaceAll('ids', 'ids: number[]')
+      .replaceAll('now', 'Date')
+    return str.includes('Valid') ||
+      str.includes('ids') ||
+      str.includes('uid') ||
+      str.includes('idOrIds')
+      ? str
+      : str.replace('id', 'id: number')
   }
 
   const rp = lines
@@ -161,7 +166,8 @@ function replacements(contents: string) {
       return line
     })
     .map((line, index) => {
-      if (!CREATE.test(line) || line.includes('debug') || line.includes('values') || created) return line
+      if (!CREATE.test(line) || line.includes('debug') || line.includes('values') || created)
+        return line
       const args = getFirstMatch(line, CREATE)
 
       createIndex = index
@@ -171,7 +177,8 @@ function replacements(contents: string) {
       return line.replace(args, `${args}: CreateType`)
     })
     .map((line, index) => {
-      if (!UPDATE.test(line) || line.includes('debug') || line.includes('await')|| updated) return line
+      if (!UPDATE.test(line) || line.includes('debug') || line.includes('await') || updated)
+        return line
       const args = getFirstMatch(line, UPDATE)
 
       updateIndex = index
@@ -181,19 +188,31 @@ function replacements(contents: string) {
       return line.replace(`{${args}}`, `{ ${args} }: UpdateType`)
     })
 
-  const createType = create ? `type CreateType = ${create.includes('{') ? types(create) : `{${types(create)}`}\n` : ''
-  const withCreateType =  createIndex ? [...rp.slice(0, createIndex-2), createType, ...rp.slice(createIndex-2)] : rp
+  const createType = create
+    ? `type CreateType = ${create.includes('{') ? types(create) : `{${types(create)}`}\n`
+    : ''
+  const withCreateType = createIndex
+    ? [...rp.slice(0, createIndex - 2), createType, ...rp.slice(createIndex - 2)]
+    : rp
 
-  const updateType = update ? `type UpdateType = {${types(update)}${ update.includes('}') ? '' :'}' } \n` : ''
-  const withTypes =  updateIndex ? [...withCreateType.slice(0, updateIndex - 1), updateType, ...withCreateType.slice(updateIndex - 1)] : withCreateType
+  const updateType = update
+    ? `type UpdateType = {${types(update)}${update.includes('}') ? '' : '}'} \n`
+    : ''
+  const withTypes = updateIndex
+    ? [
+        ...withCreateType.slice(0, updateIndex - 1),
+        updateType,
+        ...withCreateType.slice(updateIndex - 1),
+      ]
+    : withCreateType
 
   const seqImps = []
 
-  if(Op.test(contents))  seqImps.push('Sequelize')
-  if(hasTransaction) seqImps.push('{ Transaction }')
+  if (Op.test(contents)) seqImps.push('Sequelize')
+  if (hasTransaction) seqImps.push('{ Transaction }')
 
   //const imps = [model, ...modelsToImport].filter((ip, i, s) => s.indexOf(ip) === i)
-  const imp = seqImps.length ? `import ${ seqImps.join(', ')} from 'sequelize'` : ''
+  const imp = seqImps.length ? `import ${seqImps.join(', ')} from 'sequelize'` : ''
   return [imp, ...withTypes].join('\n').replace("import from 'sequelize';", '')
 }
 

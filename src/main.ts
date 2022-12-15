@@ -1,7 +1,12 @@
-import { readdirSync, unlinkSync, readFileSync, writeFileSync } from 'fs'
+import { readdirSync, readFileSync, writeFileSync } from 'fs'
 import MODELS from './index.json'
 
-const getFirstMatch = (line: string, regex: RegExp) => Array.from(line.match(regex))[1]
+const getMatch = (line: string, regex: RegExp, i = 1) => Array.from(line.match(regex))[i]
+
+const snakeToCamel = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''))
 
 function applyToFiles(
   root: string,
@@ -15,8 +20,8 @@ function applyToFiles(
       for (const callback of callbacks) {
         contents = callback(contents, root, file)
       }
-      unlinkSync(path)
-      writeFileSync(path.replace('.js', '.ts'), contents)
+      //unlinkSync(path)
+      //writeFileSync(path.replace('.js', '.ts'), contents)
     } catch (e) {
       console.log(`Error with ${file}`)
       console.log(e)
@@ -27,10 +32,12 @@ function applyToFiles(
 export function main() {
   const root = process.argv[2]
   const pathRegex = process.argv[3]
-  const files = readdirSync(root).filter((fl) => RegExp(pathRegex).test(fl))
+  const files = readdirSync(root)
+    .filter((fl) => RegExp(pathRegex).test(fl))
+    .filter((x) => x !== 'index.js')
 
-  //applyToFiles(root, files, [createModel])
-  applyToFiles(root, files, [toImport, replacements])
+  applyToFiles(root, files, [createModel])
+  //applyToFiles(root, files, [toImport, replacements])
 }
 
 function toImport(contents: string) {
@@ -61,13 +68,14 @@ function createModel(contents: string, root: string, path: string) {
 
   const lines = contents.split('\n')
 
-  const model = getFirstMatch(
+  const model = getMatch(
     lines.find((l) => EXPORTS.test(l)),
     EXPORTS,
   ) as keyof typeof MODELS
 
-  const HAS_MANY = new RegExp(`${model}\.([A-Z]*) = ${model}\.hasMany`)
-  const BELONGS_TO = new RegExp(`${model}\.([A-Z]*) = ${model}\.belongsTo`)
+  const HAS_MANY = new RegExp(`${model}\.([A-Z\_]*) = ${model}\.hasMany`)
+  const BELONGS_TO = new RegExp(`${model}\.([A-Z\_]*) = ${model}\.belongsTo`)
+  const ASSC = new RegExp(`${model}\.([A-Z]*) = ${model}\..*\\(models\.([a-zA-Z]*)\,`)
 
   const attrb = MODELS[model]
     .filter((a) => !a.includes('ForeignKey'))
@@ -76,45 +84,62 @@ function createModel(contents: string, root: string, path: string) {
     .filter((a) => a.includes('ForeignKey'))
     .map((name) => `declare ${name}`)
 
-  const matchHasManys = () =>
-    lines.filter((l) => HAS_MANY.test(l)).map((l) => getFirstMatch(l, HAS_MANY))
-  const hasManys = matchHasManys().map((name) => `declare static ${name}: HasMany<${model}>;`)
+  const modelImps = []
 
-  const matchBelongsTos = () =>
-    lines.filter((l) => BELONGS_TO.test(l)).map((l) => getFirstMatch(l, BELONGS_TO))
-  const belongsTos = matchBelongsTos().map((name) => `declare static ${name}: BelongsTo<${model}>;`)
+  const associations = lines
+    .filter((l) => ASSC.test(l))
+    .map((asc) => {
+      const name = snakeToCamel(getMatch(asc, ASSC))
+      const ascModel = getMatch(asc, ASSC, 2)
+      const suffix = name.at(-1) === 's' ? '[]' : ''
 
-  const MODEL = /models\./
-  const MATCH = /models\.(\w+)/
+      modelImps.push(ascModel)
 
-  const imps = lines
-    .filter((l) => MODEL.test(l))
-    .map((l) => getFirstMatch(l, MATCH))
-    .filter((ip, i, s) => s.indexOf(ip) === i)
-  const seqImps = []
+      const declaration = `declare ${name}?: NonAttribute<${ascModel}Plain${suffix}>;`
+      const type = `${name}?: ${ascModel}${suffix}`
+
+      return { declaration, type }
+    })
+
+  const hasManys = lines
+    .filter((l) => HAS_MANY.test(l))
+    .map((l) => getMatch(l, HAS_MANY))
+    .map((name) => `declare static ${name}: HasMany<${model}>;`)
+
+  const belongsTos = lines
+    .filter((l) => BELONGS_TO.test(l))
+    .map((l) => getMatch(l, BELONGS_TO))
+    .map((name) => `declare static ${name}: BelongsTo<${model}>;`)
+
+  const seqImps = ['InferAttributes']
 
   if (hasManys.length) seqImps.push('HasMany')
   if (belongsTos.length) seqImps.push('BelongsTo')
   if (keys.length) seqImps.push('ForeignKey')
+  if (associations.length) seqImps.push('NonAttribute')
 
-  const utilImps = [ 'ModelBase' ]
+  const utilImps = ['ModelBase', 'Plain']
 
-  if(attrb.join('').includes('JsonValue')) utilImps.push('JsonValue')
-    
-  //${ imps.length ? `import { ${imps.join(', ')} } from '.';` : ''}
+  if (attrb.join('').includes('JsonValue')) utilImps.push('JsonValue')
+
   const md = `
-      ${ seqImps.length ? `import { ${seqImps.join(', ')} } from 'sequelize';` : ''}
-      ${ utilImps.length ? `import { ${utilImps.join(', ')} } from '../utils';` : ''}
+      ${seqImps.length ? `import { ${seqImps.join(', ')} } from 'sequelize';` : ''}
+      ${utilImps.length ? `import { ${utilImps.join(', ')} } from '../utils';` : ''}
+      ${modelImps.length ? `import { ${modelImps.filter((ip, i, s) => s.indexOf(ip) === i).filter(x => x !== model).join('Plain, ')} } from '.';` : ''}
 
      export class ${model} extends ModelBase<${model}> {
-       ${attrb.join('\n')}
+       ${attrb.sort().join('\n')}
 
-       ${keys.join('\n')}
+       ${keys.sort().join('\n')}
 
-       ${hasManys.join('\n')}
+       ${hasManys.sort().join('\n')}
 
-       ${belongsTos.join('\n')}
+       ${belongsTos.sort().join('\n')}
+
+       ${associations.sort().map(x => x.declaration).join('\n')}
      }
+
+     export type ${model}Plain = Plain<${model}> 
     `
 
   writeFileSync(`${root}/classes/${path.replace('.js', '.ts')}`, md)
@@ -144,12 +169,12 @@ function replacements(contents: string) {
   const rp = lines
     .map((line) => {
       if (!MODEL.test(line)) return line
-      modelsToImport.push(getFirstMatch(line, MATCH))
+      modelsToImport.push(getMatch(line, MATCH))
       return line.replace('models.', '')
     })
     .map((line) => {
       if (!EXPORTS.test(line)) return line
-      model = getFirstMatch(line, EXPORTS)
+      model = getMatch(line, EXPORTS)
       MODEL_REGEX = new RegExp(`return ${model}`)
       console.log(MODEL_REGEX)
       return `export function define${model}({ sequelize, DataTypes }: DefinitionArgs) {`
