@@ -11,7 +11,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/jest": "27.5.0",
+    "@types/jest": "^29.4.0",
     "@types/node": "^16.0.0",
     "@types/supertest": "^2.0.11",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
@@ -36,7 +36,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": "test",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
