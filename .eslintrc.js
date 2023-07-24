@@ -1,7 +1,4 @@
 module.exports = {
-  env: {
-    node: true
-  },
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: 'tsconfig.json',
@@ -19,16 +16,6 @@ module.exports = {
     'plugin:import/typescript',
     'prettier'
   ],
-  settings: {
-    'import/parsers': {
-      '@typescript-eslint/parser': ['.ts']
-    },
-    'import/resolver': {
-      typescript: {
-        alwaysTryTypes: true
-      }
-    }
-  },
   root: true,
   env: {
     node: true,
